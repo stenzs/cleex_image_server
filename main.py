@@ -9,7 +9,6 @@ import config
 app = Flask(__name__, static_url_path="/images")
 CORS(app)
 
-app.config['AVATAR_UPLOAD_FOLDER'] = config.AVATAR_UPLOAD_FOLDER
 ADDRESS = config.ADDRESS
 
 
