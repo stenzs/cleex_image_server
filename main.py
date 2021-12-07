@@ -9,8 +9,6 @@ import config
 app = Flask(__name__, static_url_path="/images")
 CORS(app)
 
-ADDRESS = config.ADDRESS
-
 
 @app.route('/', methods=['GET'])
 def hello():
@@ -33,7 +31,7 @@ def avatar(staff_id):
             if not os.path.exists(config.AVATAR_UPLOAD_FOLDER + '/' + staff_id):
                 os.makedirs(config.AVATAR_UPLOAD_FOLDER + '/' + staff_id)
             if file:
-                filename = (uuid.uuid4().hex)[0:10] + datetime.now().strftime('%Y%m%d%H%M%S') + '.webp'
+                filename = uuid.uuid4().hex[0:10] + datetime.now().strftime('%Y%m%d%H%M%S') + '.webp'
                 file.save(os.path.join(config.AVATAR_UPLOAD_FOLDER + '/' + staff_id, filename))
                 road = config.AVATAR_UPLOAD_ALIAS + '/' + staff_id + '/' + filename
                 success = True
@@ -53,6 +51,50 @@ def avatar(staff_id):
             resp = jsonify(errors)
             resp.status_code = 500
             return resp
+
+
+#
+@app.route('/menu/<staff_id>', methods=['POST'])
+def institution_id(staff_id):
+    if request.method == 'POST':
+        user = Staff.get_or_none(Staff.id == staff_id)
+        if user is None:
+            return jsonify({'message': 'institution_id does not exist'}), 403
+        if 'pdf' not in request.files:
+            return jsonify({'message': 'No file part in the request'}), 422
+        files = request.files.getlist('pdf')
+        errors = {}
+        success = False
+        for file in files:
+            name = file.filename
+            extension = name.rsplit('.', 1)[1].lower() in ['pdf'] and '.' in name
+            if not os.path.exists(config.PDF_MENU_UPLOAD_FOLDER + '/' + staff_id):
+                os.makedirs(config.PDF_MENU_UPLOAD_FOLDER + '/' + staff_id)
+            if file and extension:
+                print('TRUE')
+                filename = uuid.uuid4().hex[0:10] + datetime.now().strftime('%Y%m%d%H%M%S') + '.pdf'
+                file.save(os.path.join(config.PDF_MENU_UPLOAD_FOLDER + '/' + staff_id, filename))
+                road = config.PDF_MENU_UPLOAD_ALIAS + '/' + staff_id + '/' + filename
+                success = True
+                print(road)
+            else:
+                errors[file.filename] = 'File type is not allowed'
+        if success and errors:
+            errors['message'] = 'something wrong'
+            resp = jsonify(errors)
+            resp.status_code = 500
+            return resp
+        if success:
+            # Добавить столбец menu
+            # user = Staff(menu=road)
+            # user.id = staff_id
+            # user.save()
+            return jsonify({'message': 'success', 'image': road}), 200
+        else:
+            resp = jsonify(errors)
+            resp.status_code = 500
+            return resp
+
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
