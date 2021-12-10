@@ -53,7 +53,37 @@ def avatar(staff_id):
             return resp
 
 
-#
+@app.route('/team_avatar', methods=['POST'])
+def team_avatar():
+    if request.method == 'POST':
+        if 'files[]' not in request.files:
+            return jsonify({'message': 'No file part in the request'}), 422
+        files = request.files.getlist('files[]')
+        errors = {}
+        success = False
+        for file in files:
+            if not os.path.exists(config.AVATAR_UPLOAD_FOLDER + '/' + 'team_avatars'):
+                os.makedirs(config.AVATAR_UPLOAD_FOLDER + '/' + 'team_avatars')
+            if file:
+                filename = uuid.uuid4().hex[0:10] + datetime.now().strftime('%Y%m%d%H%M%S') + '.webp'
+                file.save(os.path.join(config.AVATAR_UPLOAD_FOLDER + '/' + 'team_avatars', filename))
+                road = config.AVATAR_UPLOAD_ALIAS + '/' + 'team_avatars' + '/' + filename
+                success = True
+            else:
+                errors[file.filename] = 'File type is not allowed'
+        if success and errors:
+            errors['message'] = 'something wrong'
+            resp = jsonify(errors)
+            resp.status_code = 500
+            return resp
+        if success:
+            return jsonify({'message': 'success', 'image': road}), 200
+        else:
+            resp = jsonify(errors)
+            resp.status_code = 500
+            return resp
+
+
 @app.route('/menu/<staff_id>', methods=['POST'])
 def institution_id(staff_id):
     if request.method == 'POST':
